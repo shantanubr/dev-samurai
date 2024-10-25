@@ -1,0 +1,96 @@
+{
+    // General Settings
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.wordWrap": "on",
+    "editor.minimap.enabled": false,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.associations": {
+      "*.js": "javascriptreact",
+      "*.ts": "typescriptreact"
+    },
+
+    // Font and Appearance
+    "editor.fontFamily": "'Fira Code', 'JetBrains Mono', monospace",
+    "editor.fontLigatures": true,
+    "workbench.colorTheme": "Default Dark+",
+
+    // Code Actions and Refactorings
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "always",
+      "source.fixAll.eslint": "always"
+    },
+
+    // Emmet Settings (for JSX)
+    "emmet.includeLanguages": {
+      "javascript": "javascriptreact",
+      "typescript": "typescriptreact"
+    },
+
+    // Prettier Settings
+    "prettier.singleQuote": true,
+    "prettier.trailingComma": "all",
+    "prettier.tabWidth": 2,
+    "prettier.useTabs": false,
+    "prettier.printWidth": 80,
+    "prettier.jsxSingleQuote": true,
+    "prettier.semi": true,
+
+    // Tailwind CSS IntelliSense
+    "tailwindCSS.emmetCompletions": true,
+    "tailwindCSS.includeLanguages": {
+      "javascript": "javascriptreact",
+      "typescript": "typescriptreact"
+    },
+
+    // TypeScript Settings
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.updateImportsOnFileMove.enabled": "always",
+
+    // Git and Source Control
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "git.enableSmartCommit": true,
+    "git.ignoreLimitWarning": true,
+
+    // Terminal
+    "terminal.integrated.fontFamily": "'Fira Code', 'JetBrains Mono', monospace",
+    "terminal.integrated.fontSize": 14,
+
+    // Extensions Recommendations
+    "extensions.ignoreRecommendations": false,
+
+    // Workbench Settings
+    "workbench.startupEditor": "newUntitledFile",
+    "workbench.sideBar.location": "left",
+
+    // Auto Close Tag and Auto Rename Tag
+    "auto-close-tag.enable": true,
+    "auto-rename-tag.activationOnLanguage": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+
+    // JSON Formatter
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+
+    // Markdown Settings
+    "[markdown]": {
+      "editor.wordWrap": "on",
+      "editor.quickSuggestions": {}
+    },
+
+    // HTML Settings
+    "[html]": {
+      "editor.defaultFormatter": "vscode.html-language-features"
+    },
+
+    // JavaScript and TypeScript Settings
+    "[javascript][typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+  }
