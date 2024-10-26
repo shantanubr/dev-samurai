@@ -47,7 +47,7 @@ const Folder: FC<FolderProps> = ({ folder, onFileSelect }) => {
   return (
     <li>
       <div
-        className='flex items-center cursor-pointer hover:bg-neutral-800 p-2 rounded'
+        className='flex items-center cursor-pointer hover:bg-neutral-200 hover:dark:bg-neutral-800 p-2 rounded'
         onClick={() => setIsOpen(!isOpen)}
       >
         <span>
@@ -83,8 +83,10 @@ const File: FC<FileProps> = ({ file, onFileSelect }) => {
   const isFileSelected = pathName.includes(file.name);
   return (
     <li
-      className={`cursor-pointer hover:bg-neutral-800 p-2 rounded text-sm ${
-        isFileSelected ? 'bg-neutral-800' : 'bg-background'
+      className={`cursor-pointer hover:bg-neutral-200 hover:dark:bg-neutral-800 p-2 rounded text-sm ${
+        isFileSelected
+          ? ' bg-neutral-300 dark:bg-neutral-800'
+          : 'bg-neutral-100 dark:bg-background'
       }`}
       onClick={() => onFileSelect(file.path)}
     >

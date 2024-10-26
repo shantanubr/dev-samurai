@@ -17,8 +17,10 @@ export default async function TopicPage({ params }: PageProps) {
   const { content } = matter(fileContents);
 
   return (
-    <div className='prose dark:prose-invert mx-auto p-4 dark:'>
+    <div className='prose dark:prose-invert mx-auto p-4'>
+      <div className='h-10' />
       <MDXRemote source={content} />
+      <div className='h-40' />
     </div>
   );
 }

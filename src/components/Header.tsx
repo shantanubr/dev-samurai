@@ -42,8 +42,11 @@ export const Header: React.FC = () => {
         pathname === '/' ? '' : 'border-b-2 dark:border-neutral-900'
       }`}
     >
-      <div className='hidden sm:flex w-2/12'>
-        <p>ThisLogo</p>
+      <div
+        className='hidden sm:flex w-2/12'
+        onClick={() => router.replace('/')}
+      >
+        <p className='font-bold cursor-pointer'>{`</> Dev Samurai`}</p>
       </div>
       <div className='flex items-center space-x-3'>
         {pages.map((page, pageIdx) => (
