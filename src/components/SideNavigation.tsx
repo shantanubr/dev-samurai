@@ -33,7 +33,6 @@ export const SideNavigation: React.FC<SideNavigationProps> = ({
 
   useEffect(() => {
     if (selectedFile) {
-      console.log(selectedFile);
       const filePath = selectedFile?.split('content/')[1].split('.')[0] ?? '';
 
       console.log(
@@ -73,7 +72,9 @@ export const SideNavigation: React.FC<SideNavigationProps> = ({
           ))}
         </SelectContent>
       </Select>
-      <FolderViewer structure={structure} onFileSelect={setSelectedFile} />
+      <div className='mt-6'>
+        <FolderViewer structure={structure} onFileSelect={setSelectedFile} />
+      </div>
     </div>
   );
 };

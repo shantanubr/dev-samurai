@@ -2,7 +2,6 @@ import fs from 'fs';
 import matter from 'gray-matter';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import path from 'path';
-
 interface PageProps {
   params: Promise<{ slug: string; subslug: string }>;
 }
@@ -17,8 +16,8 @@ export default async function TopicPage({ params }: PageProps) {
   const { content } = matter(fileContents);
 
   return (
-    <article>
+    <div className='prose dark:prose-invert mx-auto p-4 dark:'>
       <MDXRemote source={content} />
-    </article>
+    </div>
   );
 }

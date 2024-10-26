@@ -1,9 +1,14 @@
+@import 'highlight.js/styles/github-dark.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.prose pre {
+  background-color: #1e293b; /* Dark gray */
 }
 
 @layer base {

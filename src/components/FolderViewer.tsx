@@ -1,4 +1,6 @@
 'use client';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { FC, useState } from 'react';
 
 export interface FileNode {
@@ -45,16 +47,22 @@ const Folder: FC<FolderProps> = ({ folder, onFileSelect }) => {
   return (
     <li>
       <div
-        className='flex items-center cursor-pointer hover:bg-neutral-800 p-1 rounded'
+        className='flex items-center cursor-pointer hover:bg-neutral-800 p-2 rounded'
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>{isOpen ? '▼' : '▶︎'}</span>
-        <span className='font-semibold ml-3'>
+        <span>
+          {isOpen ? (
+            <ChevronDown className='h-4 w-4' />
+          ) : (
+            <ChevronRight className='h-4 w-4' />
+          )}
+        </span>
+        <span className='ml-4 text-sm'>
           {folder.name.substring(3).split('_').join(' ')}
         </span>
       </div>
       {isOpen && (
-        <ul className='pl-4'>
+        <ul className='ml-8'>
           <FolderViewer
             structure={folder.children}
             onFileSelect={onFileSelect}
@@ -70,13 +78,19 @@ interface FileProps {
   onFileSelect: (filePath: string) => void;
 }
 
-const File: FC<FileProps> = ({ file, onFileSelect }) => (
-  <li
-    className='pl-6 cursor-pointer hover:bg-neutral-800 p-1 rounded'
-    onClick={() => onFileSelect(file.path)}
-  >
-    {file.name.substring(3).split('_').join(' ')}
-  </li>
-);
+const File: FC<FileProps> = ({ file, onFileSelect }) => {
+  const pathName = usePathname();
+  const isFileSelected = pathName.includes(file.name);
+  return (
+    <li
+      className={`cursor-pointer hover:bg-neutral-800 p-2 rounded text-sm ${
+        isFileSelected ? 'bg-neutral-800' : 'bg-background'
+      }`}
+      onClick={() => onFileSelect(file.path)}
+    >
+      {file.name.substring(3).split('_').join(' ')}
+    </li>
+  );
+};
 
 export default FolderViewer;
