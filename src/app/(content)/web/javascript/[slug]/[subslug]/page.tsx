@@ -3,11 +3,11 @@ import matter from 'gray-matter';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import path from 'path';
 
-export default async function TopicPage({
-  params,
-}: {
-  params: { slug: string; subslug: string };
-}) {
+interface PageProps {
+  params: Promise<{ slug: string; subslug: string }>;
+}
+
+export default async function TopicPage({ params }: PageProps) {
   const { slug, subslug } = await params;
   const filePath = path.join(
     process.cwd(),
