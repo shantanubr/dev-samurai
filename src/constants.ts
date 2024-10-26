@@ -1,6 +1,7 @@
 export const pages = [
   {
     title: 'DSA',
+    href: 'dsa',
     subpages: [
       {
         title: 'C++',
@@ -22,6 +23,7 @@ export const pages = [
   },
   {
     title: 'Web',
+    href: 'web',
     subpages: [
       {
         title: 'Computer Networks',
@@ -37,7 +39,7 @@ export const pages = [
       },
       {
         title: 'CSS',
-        href: '/web/CSS',
+        href: '/web/css',
       },
       {
         title: 'JavaScript',
@@ -55,6 +57,7 @@ export const pages = [
   },
   {
     title: 'Mobile',
+    href: 'mobile',
     subpages: [
       {
         title: 'React Native',
@@ -72,6 +75,7 @@ export const pages = [
   },
   {
     title: 'Backend',
+    href: 'backend',
     subpages: [
       {
         title: 'Databases',
@@ -100,7 +104,8 @@ export const pages = [
     ],
   },
   {
-    title: 'Infra',
+    title: 'Infrastructure',
+    href: 'infra',
     subpages: [
       {
         title: 'Basics',

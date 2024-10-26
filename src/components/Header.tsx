@@ -9,35 +9,38 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
 import { pages } from '@/constants';
-import { cn } from '@/lib/utils';
+import { usePathname, useRouter } from 'next/navigation';
 import React from 'react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 export const Header: React.FC = () => {
-  const ListItem = React.forwardRef<
-    React.ElementRef<'a'>,
-    React.ComponentPropsWithoutRef<'a'>
-  >(({ className, title, children, ...props }, ref) => {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const ListItem: React.FC<{
+    title: string;
+    href: string;
+  }> = ({ title, href }) => {
     return (
       <li>
         <NavigationMenuLink asChild>
-          <a
-            ref={ref}
-            className={cn(
-              'block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
-              className,
-            )}
-            {...props}
+          <div
+            onClick={() => router.push(href)}
+            className={
+              'block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
+            }
           >
             <div className='text-sm font-medium leading-none'>{title}</div>
-          </a>
+          </div>
         </NavigationMenuLink>
       </li>
     );
-  });
+  };
   return (
     <div
-      className={`sticky top-0 z-50 py-4 px-6 flex items-center justify-between transition-all duration-300`}
+      className={`fixed w-full bg-background top-0 z-50 py-4 px-6 flex items-center justify-between transition-all duration-300 ${
+        pathname === '/' ? '' : 'border-b-2 dark:border-neutral-900'
+      }`}
     >
       <div className='hidden sm:flex w-2/12'>
         <p>ThisLogo</p>
