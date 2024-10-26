@@ -8,10 +8,9 @@ export default async function TopicPage({
 }: {
   params: { slug: string };
 }) {
-  const { slug } = await params;
   const filePath = path.join(
     process.cwd(),
-    `src/app/(content)/web/javascript/content/${slug}.mdx`,
+    `src/app/(content)/web/javascript/content/${params.slug}.mdx`,
   );
   const fileContents = fs.readFileSync(filePath, 'utf-8');
   const { content } = matter(fileContents);
