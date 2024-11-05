@@ -2,13 +2,15 @@ import { SideNavigation } from '@/components/SideNavigation';
 import { getFolderStructure } from '@/util/getFolderStructure';
 import path from 'path';
 
-export default async function JavaScriptLayout({
+interface SubtopicLayoutProps {
+  children: React.ReactNode;
+  params: Promise<{ topic: string; subtopic: string; slug: string }>;
+}
+
+export default async function RootLayout({
   children,
   params,
-}: Readonly<{
-  children: React.ReactNode;
-  params: { topic: string; subtopic: string; };
-}>) {
+}: SubtopicLayoutProps) {
   const { topic, subtopic } = await params;
   const docStructure = getFolderStructure(
     path.join(process.cwd(), `docs/${topic}/${subtopic}`),
