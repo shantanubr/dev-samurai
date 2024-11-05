@@ -4,11 +4,14 @@ import path from 'path';
 
 export default async function JavaScriptLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: { topic: string; subtopic: string; };
 }>) {
+  const { topic, subtopic } = await params;
   const docStructure = getFolderStructure(
-    path.join(process.cwd(), `docs/web/javascript`),
+    path.join(process.cwd(), `docs/${topic}/${subtopic}`),
   );
 
   return (

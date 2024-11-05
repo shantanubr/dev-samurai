@@ -4,14 +4,14 @@ import { MDXRemote } from 'next-mdx-remote/rsc';
 import path from 'path';
 
 interface PageProps {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ topic: string; }>;
 }
 
 export default async function TopicPage({ params }: PageProps) {
-  const { slug } = await params;
+  const { topic } = await params;
   const filePath = path.join(
     process.cwd(),
-    `docs/web/javascript/${slug}.mdx`,
+    `docs/${topic}.mdx`,
   );
   const fileContents = fs.readFileSync(filePath, 'utf-8');
   const { content } = matter(fileContents);
