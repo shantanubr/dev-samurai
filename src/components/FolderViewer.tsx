@@ -1,4 +1,5 @@
 'use client';
+import { toBeginningCase } from '@/util';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { FC, useState } from 'react';
@@ -58,11 +59,11 @@ const Folder: FC<FolderProps> = ({ folder, onFileSelect }) => {
           )}
         </span>
         <span className='ml-4 text-sm'>
-          {folder.name.substring(3).split('_').join(' ')}
+          {toBeginningCase(folder.name).substring(2)}
         </span>
       </div>
       {isOpen && (
-        <ul className='ml-8'>
+        <ul className='ml-8 mt-1'>
           <FolderViewer
             structure={folder.children}
             onFileSelect={onFileSelect}
@@ -90,7 +91,7 @@ const File: FC<FileProps> = ({ file, onFileSelect }) => {
       }`}
       onClick={() => onFileSelect(file.path)}
     >
-      {file.name.substring(3).split('_').join(' ')}
+      {toBeginningCase(file.name).substring(2)}
     </li>
   );
 };

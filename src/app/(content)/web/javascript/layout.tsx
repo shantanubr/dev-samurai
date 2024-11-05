@@ -8,7 +8,7 @@ export default async function JavaScriptLayout({
   children: React.ReactNode;
 }>) {
   const docStructure = getFolderStructure(
-    path.join(process.cwd(), `src/app/(content)/web/javascript/content`),
+    path.join(process.cwd(), `docs/web/javascript`),
   );
 
   return (

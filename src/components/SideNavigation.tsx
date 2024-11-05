@@ -33,22 +33,8 @@ export const SideNavigation: React.FC<SideNavigationProps> = ({
 
   useEffect(() => {
     if (selectedFile) {
-      const filePath = selectedFile?.split('content/')[1].split('.')[0] ?? '';
-
-      console.log(
-        'HELLO',
-        '/' + pathname.split('/')[1] + '/' + pathname.split('/')[2] + '/',
-        filePath,
-      );
-
-      router.push(
-        '/' +
-          pathname.split('/')[1] +
-          '/' +
-          pathname.split('/')[2] +
-          '/' +
-          filePath,
-      );
+      const filePath = '/' + (selectedFile?.split('docs/')[1].split('.')[0] ?? '');
+      router.push(filePath);
     }
   }, [selectedFile]);
 
