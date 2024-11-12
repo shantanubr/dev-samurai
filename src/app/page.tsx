@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { GetStartedButton } from '@/components/GetStartedButton';
 
 export default function Home() {
   return (
@@ -9,9 +9,7 @@ export default function Home() {
       <p className='text-2xl text-sky-900 dark:text-sky-400 font-semibold mt-4'>
         A Developer Documentation For Software Engineers
       </p>
-      <Button className='mt-16' size={'lg'}>
-        Get Started
-      </Button>
+      <GetStartedButton />
     </div>
   );
 }
