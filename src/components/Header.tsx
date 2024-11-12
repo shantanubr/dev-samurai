@@ -8,7 +8,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
-import { pages } from '@/constants';
+import { pages, siteName } from '@/constants';
 import { usePathname, useRouter } from 'next/navigation';
 import React from 'react';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -46,7 +46,7 @@ export const Header: React.FC = () => {
         className='hidden sm:flex w-2/12'
         onClick={() => router.replace('/')}
       >
-        <p className='font-bold cursor-pointer'>{`</> Dev Samurai`}</p>
+        <p className='font-bold cursor-pointer'>{`</> ${siteName}`}</p>
       </div>
       <div className='flex items-center space-x-3'>
         {pages.map((page, pageIdx) => (

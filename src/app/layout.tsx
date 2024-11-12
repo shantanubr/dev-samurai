@@ -1,11 +1,12 @@
 import { Header } from '@/components/Header';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { siteName } from '@/constants';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Dev Samurai',
+  title: siteName,
 };
 
 const inter = Inter({

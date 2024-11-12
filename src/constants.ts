@@ -122,3 +122,5 @@ export const pages = [
     ],
   },
 ];
+
+export const siteName = 'Dev Samurai ⚔️';

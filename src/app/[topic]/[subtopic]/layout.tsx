@@ -22,15 +22,15 @@ export default async function RootLayout({
       <div className='w-1/5 h-full overflow-y-auto bg-neutral-100 dark:bg-background dark:border-r dark:border-neutral-800 p-4 space-y-4'>
         <SideNavigation structure={docStructure} />
       </div>
-      <div className='w-4/5 h-full overflow-y-auto'>
+      <div className='w-3/5 h-full overflow-y-auto'>
         <div className='p-4'>{children}</div>
         <div className='mb-20'>
           <Footer location='docs' />
         </div>
       </div>
-      {/* <div className='w-1/5 h-full overflow-y-auto bg-neutral-100 dark:bg-background dark:border-l dark:border-neutral-800 p-4'>
+      <div className='w-1/5 h-full overflow-y-auto bg-neutral-100 dark:bg-background dark:border-l dark:border-neutral-800 p-4'>
         <p>Right Section Content</p>
-      </div> */}
+      </div>
     </div>
   );
 }
