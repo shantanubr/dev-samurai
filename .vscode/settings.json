@@ -18,7 +18,7 @@
     // Font and Appearance
     "editor.fontFamily": "'Fira Code', 'JetBrains Mono', monospace",
     "editor.fontLigatures": true,
-    "workbench.colorTheme": "Default Dark+",
+    "workbench.colorTheme": "Default Dark Modern",
 
     // Code Actions and Refactorings
     "editor.codeActionsOnSave": {
