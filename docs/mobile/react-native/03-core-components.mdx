@@ -1,0 +1,226 @@
+# Core Components in React Native
+
+## Essential Components
+
+### View
+The most fundamental component, equivalent to div in web development.
+```jsx
+import { View } from 'react-native';
+
+const Container = () => (
+  <View style={{ flex: 1, padding: 20 }}>
+    {/* Child components go here */}
+  </View>
+);
+```
+
+### Text
+The only component that can contain strings.
+```jsx
+import { Text } from 'react-native';
+
+const TextExample = () => (
+  <Text style={{ fontSize: 16, color: 'black' }}>
+    Hello, React Native!
+  </Text>
+);
+```
+
+### Image
+Handles displaying images from various sources.
+```jsx
+import { Image } from 'react-native';
+
+// Local image
+const LocalImage = () => (
+  <Image 
+    source={require('./path/to/image.png')}
+    style={{ width: 200, height: 200 }}
+  />
+);
+
+// Remote image
+const RemoteImage = () => (
+  <Image 
+    source={{ uri: 'https://example.com/image.jpg' }}
+    style={{ width: 200, height: 200 }}
+  />
+);
+```
+
+### TextInput
+Handles user text input.
+```jsx
+import { TextInput } from 'react-native';
+
+const InputExample = () => {
+  const [text, setText] = useState('');
+  
+  return (
+    <TextInput
+      value={text}
+      onChangeText={setText}
+      placeholder="Enter text here"
+      style={{ 
+        height: 40,
+        borderColor: 'gray',
+        borderWidth: 1,
+        padding: 10
+      }}
+    />
+  );
+};
+```
+
+### ScrollView
+Container for scrollable content.
+```jsx
+import { ScrollView } from 'react-native';
+
+const ScrollableContent = () => (
+  <ScrollView>
+    {/* Scrollable content */}
+  </ScrollView>
+);
+```
+
+### FlatList
+Optimized list component for large lists.
+```jsx
+import { FlatList } from 'react-native';
+
+const data = [
+  { id: '1', title: 'Item 1' },
+  { id: '2', title: 'Item 2' },
+];
+
+const ListExample = () => (
+  <FlatList
+    data={data}
+    renderItem={({ item }) => (
+      <Text>{item.title}</Text>
+    )}
+    keyExtractor={item => item.id}
+  />
+);
+```
+
+## Interactive Components
+
+### Button
+Simple button component.
+```jsx
+import { Button } from 'react-native';
+
+const ButtonExample = () => (
+  <Button
+    title="Press me"
+    onPress={() => alert('Button pressed!')}
+  />
+);
+```
+
+### TouchableOpacity
+Creates touchable elements with opacity feedback.
+```jsx
+import { TouchableOpacity } from 'react-native';
+
+const TouchableExample = () => (
+  <TouchableOpacity
+    onPress={() => alert('Pressed!')}
+    style={{ padding: 10, backgroundColor: 'blue' }}
+  >
+    <Text style={{ color: 'white' }}>Press Me</Text>
+  </TouchableOpacity>
+);
+```
+
+### Pressable
+Modern touchable component with more customization options.
+```jsx
+import { Pressable } from 'react-native';
+
+const PressableExample = () => (
+  <Pressable
+    onPress={() => alert('Pressed!')}
+    style={({ pressed }) => ({
+      backgroundColor: pressed ? 'darkgray' : 'lightgray',
+      padding: 10,
+    })}
+  >
+    <Text>Press Me</Text>
+  </Pressable>
+);
+```
+
+## Layout Components
+
+### SafeAreaView
+Renders content within the safe area boundaries of a device.
+```jsx
+import { SafeAreaView } from 'react-native';
+
+const SafeContent = () => (
+  <SafeAreaView style={{ flex: 1 }}>
+    {/* Content safe from notches and system UI */}
+  </SafeAreaView>
+);
+```
+
+### Modal
+Displays content in a modal overlay.
+```jsx
+import { Modal } from 'react-native';
+
+const ModalExample = () => {
+  const [visible, setVisible] = useState(false);
+  
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setVisible(false)}
+    >
+      {/* Modal content */}
+    </Modal>
+  );
+};
+```
+
+## Best Practices
+
+1. Component Selection
+- Use FlatList instead of ScrollView for long lists
+- Prefer Pressable over TouchableOpacity for new projects
+- Use SafeAreaView for full-screen content
+
+2. Performance Optimization
+- Implement shouldComponentUpdate or React.memo
+- Use PureComponent for simple components
+- Avoid inline styles in render methods
+
+3. Accessibility
+- Add accessible={true} to interactive elements
+- Provide accessibilityLabel props
+- Use proper role and state props
+
+4. Platform Specific Components
+```jsx
+import { Platform } from 'react-native';
+
+const styles = {
+  container: {
+    ...Platform.select({
+      ios: {
+        shadowColor: 'black',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+};
+```

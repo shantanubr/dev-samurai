@@ -1,0 +1,80 @@
+# Getting Started with React Native
+
+## Prerequisites
+- Node.js (version 14 or newer)
+- npm or Yarn package manager
+- Xcode (for iOS development)
+- Android Studio (for Android development)
+- Watchman (recommended)
+
+## Environment Setup
+
+### Installing React Native CLI
+```bash
+npm install -g react-native-cli
+```
+
+### Creating a New Project
+```bash
+npx react-native init YourProjectName
+# With TypeScript template
+npx react-native init YourProjectName --template react-native-template-typescript
+```
+
+## Project Structure
+```
+YourProjectName/
+├── android/          # Android native code
+├── ios/             # iOS native code
+├── node_modules/    # Dependencies
+├── src/             # Your source code
+├── App.js           # Root component
+├── package.json     # Project configuration
+└── index.js         # Entry point
+```
+
+## Running Your App
+
+### iOS
+```bash
+cd YourProjectName
+npx pod-install      # Install iOS dependencies
+npx react-native run-ios
+```
+
+### Android
+```bash
+cd YourProjectName
+npx react-native run-android
+```
+
+## Development Tools
+
+### React Native Debugger
+- Install React Native Debugger for better debugging experience
+- Enable remote debugging in your app
+- Use Chrome Developer Tools for debugging
+
+### Hot Reloading
+- Enable hot reloading during development
+- Changes reflect immediately without full reload
+
+## Common Issues and Solutions
+
+### Metro Bundler Issues
+- Clear metro bundler cache: `npx react-native start --reset-cache`
+- Ensure proper Node.js version
+
+### iOS Build Issues
+- Clean build folder: `cd ios && xcodebuild clean`
+- Reinstall pods: `cd ios && pod install`
+
+### Android Build Issues
+- Clean gradle: `cd android && ./gradlew clean`
+- Update gradle version if needed
+
+## Next Steps
+- Explore core components
+- Learn about state management
+- Understand navigation
+- Study platform-specific code

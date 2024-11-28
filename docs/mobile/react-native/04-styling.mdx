@@ -1,0 +1,276 @@
+# Styling in React Native
+
+## StyleSheet API
+
+### Basic Usage
+```jsx
+import { StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  text: {
+    fontSize: 16,
+    color: '#333',
+  },
+});
+```
+
+## Flexbox Layout
+
+### Flex Direction
+```jsx
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row', // 'column', 'row-reverse', 'column-reverse'
+  },
+});
+```
+
+### Justify Content
+```jsx
+const styles = StyleSheet.create({
+  container: {
+    justifyContent: 'center', // 'flex-start', 'flex-end', 'space-between', 'space-around', 'space-evenly'
+  },
+});
+```
+
+### Align Items
+```jsx
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center', // 'flex-start', 'flex-end', 'stretch', 'baseline'
+  },
+});
+```
+
+### Flex Wrap
+```jsx
+const styles = StyleSheet.create({
+  container: {
+    flexWrap: 'wrap', // 'nowrap', 'wrap-reverse'
+  },
+});
+```
+
+## Dimensions and Units
+
+### Fixed Dimensions
+```jsx
+const styles = StyleSheet.create({
+  box: {
+    width: 100,
+    height: 100,
+  },
+});
+```
+
+### Percentage Dimensions
+```jsx
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    height: '50%',
+  },
+});
+```
+
+### Dynamic Dimensions
+```jsx
+import { Dimensions } from 'react-native';
+
+const windowWidth = Dimensions.get('window').width;
+const windowHeight = Dimensions.get('window').height;
+
+const styles = StyleSheet.create({
+  container: {
+    width: windowWidth * 0.8,
+    height: windowHeight * 0.5,
+  },
+});
+```
+
+## Responsive Design
+
+### Using Flex
+```jsx
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  sidebar: {
+    flex: 1,
+  },
+  content: {
+    flex: 3,
+  },
+});
+```
+
+### Platform Specific Styles
+```jsx
+import { Platform, StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+  header: {
+    ...Platform.select({
+      ios: {
+        height: 44,
+        paddingTop: 20,
+      },
+      android: {
+        height: 56,
+        paddingTop: 0,
+      },
+    }),
+  },
+});
+```
+
+### Orientation Changes
+```jsx
+import { Dimensions } from 'react-native';
+import { useState, useEffect } from 'react';
+
+const OrientationAwareComponent = () => {
+  const [orientation, setOrientation] = useState('PORTRAIT');
+
+  useEffect(() => {
+    const onChange = ({ window: { width, height } }) => {
+      setOrientation(width > height ? 'LANDSCAPE' : 'PORTRAIT');
+    };
+
+    Dimensions.addEventListener('change', onChange);
+    return () => Dimensions.removeEventListener('change', onChange);
+  }, []);
+
+  return (
+    <View style={orientation === 'PORTRAIT' ? styles.portrait : styles.landscape}>
+      {/* content */}
+    </View>
+  );
+};
+```
+
+## Common Styling Patterns
+
+### Shadows (iOS)
+```jsx
+const styles = StyleSheet.create({
+  card: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+});
+```
+
+### Elevation (Android)
+```jsx
+const styles = StyleSheet.create({
+  card: {
+    elevation: 5,
+  },
+});
+```
+
+### Border Radius
+```jsx
+const styles = StyleSheet.create({
+  button: {
+    borderRadius: 10,
+    // Specific corners
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+});
+```
+
+### Gradients
+```jsx
+import LinearGradient from 'react-native-linear-gradient';
+
+const GradientButton = () => (
+  <LinearGradient
+    colors={['#4c669f', '#3b5998', '#192f6a']}
+    style={styles.gradient}
+  >
+    <Text style={styles.buttonText}>Sign in with Facebook</Text>
+  </LinearGradient>
+);
+```
+
+## Best Practices
+
+1. Style Organization
+- Keep styles in separate files
+- Group related styles together
+- Use meaningful names for style properties
+
+2. Performance
+- Use StyleSheet.create instead of inline styles
+- Avoid computing styles in render method
+- Minimize style inheritance
+
+3. Maintainability
+- Use constants for common values
+- Create reusable style components
+- Document complex style logic
+
+4. Debugging
+```jsx
+// Style Inspector
+import { StyleSheet } from 'react-native';
+console.log(StyleSheet.flatten(styles.container));
+```
+
+## Style Constants
+```jsx
+const COLORS = {
+  primary: '#007AFF',
+  secondary: '#5856D6',
+  background: '#FFFFFF',
+  text: '#000000',
+  error: '#FF3B30',
+};
+
+const SPACING = {
+  small: 8,
+  medium: 16,
+  large: 24,
+  xlarge: 32,
+};
+
+const TYPOGRAPHY = {
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  body: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+};
+
+// Usage
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: COLORS.background,
+    padding: SPACING.medium,
+  },
+  title: {
+    ...TYPOGRAPHY.header,
+    color: COLORS.primary,
+  },
+});
+```

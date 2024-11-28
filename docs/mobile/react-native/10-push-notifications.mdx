@@ -1,0 +1,575 @@
+# Push Notifications in React Native
+
+Push notifications are a crucial feature in mobile applications, allowing you to engage with users even when they're not actively using your app. This guide covers implementing push notifications in React Native for both iOS and Android platforms.
+
+## Overview
+
+Push notifications in React Native involve several components:
+
+1. Push Notification Service (APNs for iOS, FCM for Android)
+2. Push Notification Provider (Backend Server)
+3. Mobile Application (React Native Client)
+
+## Platform Setup
+
+### iOS Setup
+
+#### 1. Apple Developer Account Configuration
+```bash
+# Generate push notification certificate
+# 1. Go to Apple Developer Portal
+# 2. Create App ID with Push Notifications enabled
+# 3. Create Push Notification certificate
+# 4. Download and install the certificate
+```
+
+#### 2. Xcode Configuration
+```xml
+<!-- Info.plist -->
+<key>UIBackgroundModes</key>
+<array>
+    <string>remote-notification</string>
+</array>
+
+<key>NSAppleMusicUsageDescription</key>
+<string>Allow notifications to keep you updated</string>
+```
+
+#### 3. AppDelegate Setup
+```objc
+// AppDelegate.m
+#import <UserNotifications/UserNotifications.h>
+
+@implementation AppDelegate
+
+- (BOOL)application:(UIApplication *)application 
+didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+  // Request permission
+  UNUserNotificationCenter *center = 
+    [UNUserNotificationCenter currentNotificationCenter];
+  [center requestAuthorizationWithOptions:
+    (UNAuthorizationOptionAlert + 
+     UNAuthorizationOptionSound + 
+     UNAuthorizationOptionBadge)
+    completionHandler:^(BOOL granted, NSError * _Nullable error) {
+      if (granted) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+          [application registerForRemoteNotifications];
+        });
+      }
+  }];
+  
+  return YES;
+}
+
+// Handle token
+- (void)application:(UIApplication *)application 
+didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
+{
+  NSString *token = [self stringWithDeviceToken:deviceToken];
+  // Send token to your server
+}
+
+// Handle notification reception
+- (void)application:(UIApplication *)application 
+didReceiveRemoteNotification:(NSDictionary *)userInfo 
+fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
+{
+  // Process notification
+  completionHandler(UIBackgroundFetchResultNewData);
+}
+
+@end
+```
+
+### Android Setup
+
+#### 1. Firebase Configuration
+```gradle
+// android/build.gradle
+buildscript {
+    dependencies {
+        classpath 'com.google.gms:google-services:4.3.15'
+    }
+}
+
+// android/app/build.gradle
+apply plugin: 'com.google.gms.google-services'
+
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:32.0.0')
+    implementation 'com.google.firebase:firebase-messaging'
+}
+```
+
+#### 2. AndroidManifest Configuration
+```xml
+<!-- AndroidManifest.xml -->
+<manifest>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    
+    <application>
+        <service
+            android:name=".java.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
+```
+
+#### 3. Firebase Service Implementation
+```java
+// MyFirebaseMessagingService.java
+public class MyFirebaseMessagingService extends FirebaseMessagingService {
+    @Override
+    public void onNewToken(@NonNull String token) {
+        super.onNewToken(token);
+        // Send token to your server
+    }
+
+    @Override
+    public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
+        super.onMessageReceived(remoteMessage);
+        // Handle notification
+        sendNotification(remoteMessage);
+    }
+
+    private void sendNotification(RemoteMessage remoteMessage) {
+        // Create and show notification
+        NotificationCompat.Builder builder = 
+            new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(remoteMessage.getNotification().getTitle())
+                .setContentText(remoteMessage.getNotification().getBody())
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                
+        NotificationManagerCompat.from(this)
+            .notify(NOTIFICATION_ID, builder.build());
+    }
+}
+```
+
+## React Native Implementation
+
+### 1. Installation
+```bash
+# Install required packages
+npm install @react-native-firebase/app @react-native-firebase/messaging
+npm install @react-native-community/push-notification-ios # for iOS
+```
+
+### 2. Push Notification Service
+```typescript
+// src/services/PushNotificationService.ts
+import messaging from '@react-native-firebase/messaging';
+import PushNotificationIOS from '@react-native-community/push-notification-ios';
+import { Platform } from 'react-native';
+
+class PushNotificationService {
+  constructor() {
+    this.init();
+  }
+
+  async init() {
+    // Request permission
+    const authStatus = await messaging().requestPermission();
+    const enabled = 
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (enabled) {
+      // Get FCM token
+      const token = await messaging().getToken();
+      console.log('FCM Token:', token);
+      
+      // Send token to your server
+      await this.sendTokenToServer(token);
+    }
+  }
+
+  async sendTokenToServer(token: string) {
+    // Implement your server communication
+    try {
+      const response = await fetch('YOUR_API_ENDPOINT', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error sending token to server:', error);
+      return false;
+    }
+  }
+
+  setupNotificationHandlers() {
+    // Foreground handler
+    messaging().onMessage(async remoteMessage => {
+      this.displayNotification(remoteMessage);
+    });
+
+    // Background handler
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      this.displayNotification(remoteMessage);
+    });
+
+    // Notification opened app from background state
+    messaging().onNotificationOpenedApp(remoteMessage => {
+      this.handleNotificationOpen(remoteMessage);
+    });
+
+    // Notification opened app from quit state
+    messaging().getInitialNotification().then(remoteMessage => {
+      if (remoteMessage) {
+        this.handleNotificationOpen(remoteMessage);
+      }
+    });
+  }
+
+  displayNotification(remoteMessage: any) {
+    if (Platform.OS === 'ios') {
+      PushNotificationIOS.addNotificationRequest({
+        id: remoteMessage.messageId,
+        title: remoteMessage.notification.title,
+        body: remoteMessage.notification.body,
+        category: 'userAction',
+        userInfo: remoteMessage.data,
+      });
+    } else {
+      // Android notification is handled by Firebase Service
+    }
+  }
+
+  handleNotificationOpen(remoteMessage: any) {
+    // Handle notification click
+    // Navigate to specific screen based on data
+    const { navigation, data } = remoteMessage;
+    if (data?.screen) {
+      // Navigate to screen
+      // navigation.navigate(data.screen);
+    }
+  }
+}
+
+export default new PushNotificationService();
+```
+
+### 3. Integration in App
+```typescript
+// App.tsx
+import React, { useEffect } from 'react';
+import PushNotificationService from './services/PushNotificationService';
+
+const App = () => {
+  useEffect(() => {
+    PushNotificationService.setupNotificationHandlers();
+  }, []);
+
+  return (
+    // Your app components
+  );
+};
+```
+
+## Server Implementation
+
+### 1. Node.js Server Example
+```typescript
+// server/pushNotification.ts
+import * as admin from 'firebase-admin';
+import apn from 'apn';
+
+class PushNotificationServer {
+  private fcmAdmin: admin.app.App;
+  private apnProvider: apn.Provider;
+
+  constructor() {
+    // Initialize Firebase Admin
+    this.fcmAdmin = admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+      projectId: 'your-project-id',
+    });
+
+    // Initialize APN Provider
+    this.apnProvider = new apn.Provider({
+      token: {
+        key: 'path/to/key.p8',
+        keyId: 'key-id',
+        teamId: 'team-id',
+      },
+      production: false // Set to true for production
+    });
+  }
+
+  async sendNotification(
+    tokens: string[], 
+    title: string, 
+    body: string, 
+    data: any = {}
+  ) {
+    // Send to Android devices via FCM
+    const androidTokens = tokens.filter(token => 
+      token.length > 100); // Simple FCM token check
+    
+    if (androidTokens.length > 0) {
+      await this.sendFCMNotification(androidTokens, title, body, data);
+    }
+
+    // Send to iOS devices via APNs
+    const iosTokens = tokens.filter(token => 
+      token.length < 100); // Simple APNs token check
+    
+    if (iosTokens.length > 0) {
+      await this.sendAPNsNotification(iosTokens, title, body, data);
+    }
+  }
+
+  private async sendFCMNotification(
+    tokens: string[], 
+    title: string, 
+    body: string, 
+    data: any
+  ) {
+    const message = {
+      notification: {
+        title,
+        body,
+      },
+      data,
+      tokens,
+    };
+
+    try {
+      const response = await admin.messaging()
+        .sendMulticast(message);
+      console.log('FCM Response:', response);
+    } catch (error) {
+      console.error('FCM Error:', error);
+    }
+  }
+
+  private async sendAPNsNotification(
+    tokens: string[], 
+    title: string, 
+    body: string, 
+    data: any
+  ) {
+    const notification = new apn.Notification({
+      alert: {
+        title,
+        body,
+      },
+      payload: data,
+      topic: 'com.your.app.bundle.id',
+    });
+
+    try {
+      const response = await this.apnProvider
+        .send(notification, tokens);
+      console.log('APNs Response:', response);
+    } catch (error) {
+      console.error('APNs Error:', error);
+    }
+  }
+}
+
+export default new PushNotificationServer();
+```
+
+## Testing Push Notifications
+
+### 1. FCM Testing
+```bash
+# Using Firebase Console
+# 1. Go to Firebase Console
+# 2. Select your project
+# 3. Go to Cloud Messaging
+# 4. Send test message
+
+# Using curl
+curl -X POST -H "Authorization: key=YOUR_SERVER_KEY" \
+  -H "Content-Type: application/json" \
+  https://fcm.googleapis.com/fcm/send \
+  -d '{
+    "to": "DEVICE_TOKEN",
+    "notification": {
+      "title": "Test Title",
+      "body": "Test Body"
+    },
+    "data": {
+      "key": "value"
+    }
+  }'
+```
+
+### 2. APNs Testing
+```bash
+# Using Apple's Push Notification Tool
+xcrun simctl push booted YOUR.BUNDLE.ID notification.apns
+
+# notification.apns content:
+{
+  "aps": {
+    "alert": {
+      "title": "Test Title",
+      "body": "Test Body"
+    },
+    "sound": "default"
+  },
+  "custom-key": "custom-value"
+}
+```
+
+## Best Practices
+
+### 1. Token Management
+```typescript
+class TokenManager {
+  async refreshToken() {
+    try {
+      const token = await messaging().getToken();
+      await this.sendTokenToServer(token);
+      
+      // Listen for token refresh
+      messaging().onTokenRefresh(async newToken => {
+        await this.sendTokenToServer(newToken);
+      });
+    } catch (error) {
+      console.error('Token refresh error:', error);
+    }
+  }
+}
+```
+
+### 2. Notification Channels (Android)
+```typescript
+class NotificationChannels {
+  createChannels() {
+    if (Platform.OS === 'android') {
+      // Create high priority channel
+      this.createChannel({
+        channelId: 'high_priority',
+        channelName: 'High Priority Notifications',
+        importance: 'high',
+        sound: 'default',
+      });
+
+      // Create default channel
+      this.createChannel({
+        channelId: 'default',
+        channelName: 'Default Notifications',
+        importance: 'default',
+        sound: 'default',
+      });
+    }
+  }
+
+  private createChannel(config: any) {
+    // Implementation using native modules
+  }
+}
+```
+
+### 3. Deep Linking
+```typescript
+class DeepLinkHandler {
+  handleNotificationOpen(remoteMessage: any) {
+    const { data } = remoteMessage;
+    
+    if (data?.screen) {
+      switch (data.screen) {
+        case 'profile':
+          navigation.navigate('Profile', { id: data.userId });
+          break;
+        case 'message':
+          navigation.navigate('Chat', { threadId: data.threadId });
+          break;
+        default:
+          navigation.navigate('Home');
+      }
+    }
+  }
+}
+```
+
+### 4. Error Handling
+```typescript
+class NotificationErrorHandler {
+  handleError(error: Error) {
+    // Log error
+    console.error('Notification error:', error);
+
+    // Send to analytics
+    Analytics.logEvent('notification_error', {
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Show user feedback if necessary
+    if (error.message.includes('permission')) {
+      Alert.alert(
+        'Notification Permission Required',
+        'Please enable notifications in your device settings.'
+      );
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Notification Not Received**
+   - Check device token registration
+   - Verify server configuration
+   - Check network connectivity
+   - Validate notification payload
+
+2. **Permission Issues**
+   - Ensure proper permission requests
+   - Check device settings
+   - Verify entitlements (iOS)
+
+3. **Token Registration Failures**
+   - Check Firebase/APNs configuration
+   - Verify network connectivity
+   - Validate certificates
+
+4. **Background Notification Issues**
+   - Check background modes (iOS)
+   - Verify Firebase Service setup (Android)
+   - Test with different app states
+
+### Debugging Tools
+
+1. **Firebase Console**
+   - View delivery reports
+   - Check device registration
+   - Test notifications
+
+2. **APNs Logs**
+   - Use Console.app on macOS
+   - Check for delivery errors
+   - Verify device token
+
+3. **React Native Debugger**
+   - Monitor notification events
+   - Check token registration
+   - Debug notification handlers
+
+This documentation provides a comprehensive guide to implementing push notifications in React Native applications. Remember to:
+
+- Test thoroughly across different platforms
+- Handle edge cases and errors
+- Implement proper token management
+- Follow platform-specific best practices
+- Monitor notification delivery and user engagement

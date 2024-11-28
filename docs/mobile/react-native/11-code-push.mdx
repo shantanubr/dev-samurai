@@ -1,0 +1,501 @@
+# CodePush in React Native
+
+CodePush is a cloud service provided by Microsoft's App Center that enables React Native developers to deploy mobile app updates directly to users' devices. This guide covers the implementation and best practices for using CodePush in React Native applications.
+
+## Overview
+
+CodePush enables you to:
+- Deploy updates instantly
+- Roll back problematic releases
+- Target specific users/versions
+- Monitor deployment metrics
+- Manage multiple deployment environments
+
+## Setup
+
+### 1. Installation
+
+```bash
+# Install App Center CLI
+npm install -g appcenter-cli
+
+# Install CodePush dependencies
+npm install react-native-code-push
+
+# Link CodePush (for React Native < 0.60)
+react-native link react-native-code-push
+```
+
+### 2. App Center Configuration
+
+```bash
+# Login to App Center
+appcenter login
+
+# Create iOS app
+appcenter apps create -d MyApp-iOS -o iOS -p React-Native
+
+# Create Android app
+appcenter apps create -d MyApp-Android -o Android -p React-Native
+
+# Create deployment keys
+appcenter codepush deployment add Production
+appcenter codepush deployment add Staging
+```
+
+### 3. iOS Setup
+
+```xml
+<!-- ios/Podfile -->
+pod 'AppCenter'
+pod 'AppCenter-Analytics'
+pod 'AppCenter-Crashes'
+pod 'CodePush'
+
+<!-- Info.plist -->
+<key>CodePushDeploymentKey</key>
+<string>YOUR-IOS-DEPLOYMENT-KEY</string>
+```
+
+### 4. Android Setup
+
+```gradle
+// android/app/build.gradle
+apply from: "../../node_modules/react-native-code-push/android/codepush.gradle"
+
+android {
+    buildTypes {
+        debug {
+            ...
+        }
+        release {
+            buildConfigField "String", "CODEPUSH_KEY", '"YOUR-ANDROID-DEPLOYMENT-KEY"'
+        }
+    }
+}
+```
+
+```java
+// MainApplication.java
+import com.microsoft.codepush.react.CodePush;
+
+public class MainApplication extends Application implements ReactApplication {
+    @Override
+    protected String getJSBundleFile() {
+        return CodePush.getJSBundleFile();
+    }
+}
+```
+
+## Implementation
+
+### 1. Basic Integration
+
+```typescript
+// App.tsx
+import codePush from "react-native-code-push";
+
+const codePushOptions = {
+  checkFrequency: codePush.CheckFrequency.ON_APP_START,
+  installMode: codePush.InstallMode.IMMEDIATE
+};
+
+const App = () => {
+  return (
+    <View>
+      <Text>Your App Content</Text>
+    </View>
+  );
+};
+
+export default codePush(codePushOptions)(App);
+```
+
+### 2. Advanced Configuration
+
+```typescript
+// codePush.config.ts
+import codePush from 'react-native-code-push';
+
+export const codePushConfig = {
+  checkFrequency: codePush.CheckFrequency.ON_APP_RESUME,
+  installMode: codePush.InstallMode.ON_NEXT_RESUME,
+  mandatoryInstallMode: codePush.InstallMode.IMMEDIATE,
+  updateDialog: {
+    appendReleaseDescription: true,
+    descriptionPrefix: "\n\nChange log:\n",
+    mandatoryUpdateMessage: "An update is available that must be installed.",
+    mandatoryContinueButtonLabel: "Install",
+    optionalInstallButtonLabel: "Install",
+    optionalIgnoreButtonLabel: "Later",
+    title: "Update Available"
+  }
+};
+```
+
+### 3. Custom Update Flow
+
+```typescript
+// UpdateService.ts
+class UpdateService {
+  async checkForUpdate() {
+    try {
+      const update = await codePush.checkForUpdate();
+      
+      if (!update) {
+        console.log('App is up to date');
+        return;
+      }
+
+      if (update.isMandatory) {
+        await this.installMandatoryUpdate(update);
+      } else {
+        await this.promptOptionalUpdate(update);
+      }
+    } catch (error) {
+      console.error('CodePush update error:', error);
+    }
+  }
+
+  private async installMandatoryUpdate(update: any) {
+    try {
+      await update.download(progress => {
+        this.notifyDownloadProgress(progress);
+      });
+      
+      await update.install(codePush.InstallMode.IMMEDIATE);
+    } catch (error) {
+      console.error('Mandatory update failed:', error);
+    }
+  }
+
+  private async promptOptionalUpdate(update: any) {
+    const accepted = await this.showUpdateDialog(update);
+    
+    if (accepted) {
+      try {
+        await update.download(progress => {
+          this.notifyDownloadProgress(progress);
+        });
+        
+        await update.install(codePush.InstallMode.ON_NEXT_RESUME);
+      } catch (error) {
+        console.error('Optional update failed:', error);
+      }
+    }
+  }
+
+  private notifyDownloadProgress(progress: any) {
+    const percentage = 
+      Math.round((progress.receivedBytes / progress.totalBytes) * 100);
+    console.log(`Download progress: ${percentage}%`);
+  }
+
+  private showUpdateDialog(update: any): Promise<boolean> {
+    return new Promise(resolve => {
+      Alert.alert(
+        'Update Available',
+        `Version ${update.label} is available. Would you like to install it?`,
+        [
+          {
+            text: 'Later',
+            onPress: () => resolve(false),
+            style: 'cancel'
+          },
+          {
+            text: 'Install',
+            onPress: () => resolve(true)
+          }
+        ]
+      );
+    });
+  }
+}
+
+export default new UpdateService();
+```
+
+### 4. Integration with Navigation
+
+```typescript
+// App.tsx
+import { NavigationContainer } from '@react-navigation/native';
+import UpdateService from './services/UpdateService';
+
+const App = () => {
+  useEffect(() => {
+    UpdateService.checkForUpdate();
+  }, []);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        {/* Your navigation stack */}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
+export default codePush(codePushConfig)(App);
+```
+
+## Deployment
+
+### 1. Release Management
+
+```bash
+# Release to Staging
+appcenter codepush release-react -a <owner>/<app> -d Staging
+
+# Promote Staging to Production
+appcenter codepush promote -a <owner>/<app> -s Staging -d Production
+
+# Release with targeting
+appcenter codepush release-react -a <owner>/<app> -d Production -t "1.0.0"
+
+# Release with rollout percentage
+appcenter codepush release-react -a <owner>/<app> -d Production --rollout 25%
+```
+
+### 2. Version Management
+
+```typescript
+// version.config.ts
+export const versionConfig = {
+  minimumVersion: '1.0.0',
+  targetBinaryVersion: '~1.1.0'
+};
+
+// UpdateService.ts
+class UpdateService {
+  async checkVersion() {
+    const version = await codePush.getConfiguration();
+    
+    if (semver.lt(version.appVersion, versionConfig.minimumVersion)) {
+      this.promptForStoreUpdate();
+    }
+  }
+}
+```
+
+### 3. Deployment Scripts
+
+```javascript
+// scripts/deploy.js
+const { exec } = require('child_process');
+const semver = require('semver');
+
+async function deploy(environment, version) {
+  try {
+    // Validate version
+    if (!semver.valid(version)) {
+      throw new Error('Invalid version format');
+    }
+
+    // Build the bundle
+    await exec('react-native bundle --platform ios --dev false --entry-file index.js --bundle-output ios/main.jsbundle');
+    await exec('react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle');
+
+    // Deploy to CodePush
+    await exec(`appcenter codepush release-react -a Owner/App -d ${environment} -t "${version}" --description "Release ${version}"`);
+
+    console.log(`Successfully deployed version ${version} to ${environment}`);
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    process.exit(1);
+  }
+}
+```
+
+## Monitoring and Analytics
+
+### 1. Deployment Metrics
+
+```typescript
+// analytics.ts
+class CodePushAnalytics {
+  async trackDeployment(deploymentInfo: any) {
+    try {
+      const metrics = {
+        label: deploymentInfo.label,
+        appVersion: deploymentInfo.appVersion,
+        deploymentKey: deploymentInfo.deploymentKey,
+        status: deploymentInfo.status,
+        timestamp: new Date().toISOString()
+      };
+      
+      await Analytics.trackEvent('codepush_deployment', metrics);
+    } catch (error) {
+      console.error('Analytics error:', error);
+    }
+  }
+}
+```
+
+### 2. Error Tracking
+
+```typescript
+// errorTracking.ts
+class CodePushErrorTracker {
+  trackError(error: Error, deploymentInfo: any) {
+    Crashes.trackError(error, {
+      type: 'codepush_error',
+      deploymentLabel: deploymentInfo.label,
+      appVersion: deploymentInfo.appVersion
+    });
+  }
+}
+```
+
+## Best Practices
+
+### 1. Staged Rollouts
+
+```typescript
+// rollout.config.ts
+export const rolloutConfig = {
+  stages: [
+    { percentage: 5, duration: '1h' },
+    { percentage: 20, duration: '4h' },
+    { percentage: 50, duration: '12h' },
+    { percentage: 100, duration: '24h' }
+  ]
+};
+
+// deploymentService.ts
+class DeploymentService {
+  async executeRollout(releaseLabel: string) {
+    for (const stage of rolloutConfig.stages) {
+      await this.updateRollout(releaseLabel, stage.percentage);
+      await this.waitAndMonitor(stage.duration);
+    }
+  }
+}
+```
+
+### 2. Testing Strategy
+
+```typescript
+// __tests__/codePush.test.ts
+describe('CodePush Update Flow', () => {
+  it('should handle mandatory updates correctly', async () => {
+    const update = {
+      isMandatory: true,
+      download: jest.fn(),
+      install: jest.fn()
+    };
+    
+    codePush.checkForUpdate.mockResolvedValue(update);
+    
+    await UpdateService.checkForUpdate();
+    
+    expect(update.download).toHaveBeenCalled();
+    expect(update.install).toHaveBeenCalledWith(
+      codePush.InstallMode.IMMEDIATE
+    );
+  });
+});
+```
+
+### 3. Version Control
+
+```typescript
+// version.control.ts
+class VersionControl {
+  async shouldUpdate(newVersion: string): Promise<boolean> {
+    const currentVersion = await codePush.getCurrentPackage();
+    
+    if (!currentVersion) return true;
+    
+    return semver.gt(newVersion, currentVersion.label);
+  }
+
+  async isUpdateAllowed(targetVersion: string): Promise<boolean> {
+    const deviceVersion = await this.getDeviceVersion();
+    return semver.satisfies(deviceVersion, targetVersion);
+  }
+}
+```
+
+### 4. Backup and Recovery
+
+```typescript
+// recovery.service.ts
+class RecoveryService {
+  async rollback(deploymentKey: string) {
+    try {
+      await codePush.rollback();
+      
+      // Log rollback
+      Analytics.trackEvent('codepush_rollback', {
+        deploymentKey,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Rollback failed:', error);
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Update Not Installing**
+   - Check network connectivity
+   - Verify deployment keys
+   - Check version targeting
+   - Validate bundle size
+
+2. **Version Conflicts**
+   - Check binary version targeting
+   - Verify semver ranges
+   - Check mandatory update settings
+
+3. **Bundle Errors**
+   - Verify bundle generation
+   - Check for syntax errors
+   - Validate asset inclusion
+
+### Debugging Tools
+
+1. **CodePush CLI**
+```bash
+# Check deployment history
+appcenter codepush deployment history -a <owner>/<app> -d Production
+
+# Clear deployment history
+appcenter codepush deployment clear -a <owner>/<app> -d Production
+```
+
+2. **Device Logs**
+```typescript
+codePush.getUpdateMetadata().then(update => {
+  console.log('Current update:', update);
+});
+```
+
+3. **Metrics Dashboard**
+```typescript
+class MetricsDashboard {
+  async getDeploymentMetrics() {
+    const metrics = await codePush.getUpdateMetadata();
+    return {
+      label: metrics.label,
+      status: metrics.status,
+      installTime: metrics.installTime,
+      isMandatory: metrics.isMandatory
+    };
+  }
+}
+```
+
+This documentation provides a comprehensive guide to implementing CodePush in React Native applications. Remember to:
+
+- Test updates thoroughly before deployment
+- Use staged rollouts for production releases
+- Monitor update metrics and user feedback
+- Maintain proper version control
+- Have a rollback strategy ready
+- Keep your bundles optimized

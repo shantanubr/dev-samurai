@@ -1,0 +1,424 @@
+# Networking and API Integration in React Native
+
+## Fetch API
+
+### Basic GET Request
+```jsx
+const fetchData = async () => {
+  try {
+    const response = await fetch('https://api.example.com/data');
+    const json = await response.json();
+    return json;
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
+```
+
+### POST Request
+```jsx
+const postData = async (data) => {
+  try {
+    const response = await fetch('https://api.example.com/posts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
+```
+
+## Axios Integration
+
+### Setup
+```bash
+npm install axios
+```
+
+### Creating Instance
+```jsx
+// api/axios.js
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const api = axios.create({
+  baseURL: 'https://api.example.com',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Handle token refresh or logout
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+```
+
+### API Methods
+```jsx
+// api/methods.js
+import api from './axios';
+
+export const userAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  getProfile: () => api.get('/user/profile'),
+  updateProfile: (data) => api.put('/user/profile', data),
+};
+
+export const postsAPI = {
+  getPosts: (params) => api.get('/posts', { params }),
+  createPost: (data) => api.post('/posts', data),
+  updatePost: (id, data) => api.put(`/posts/${id}`, data),
+  deletePost: (id) => api.delete(`/posts/${id}`),
+};
+```
+
+## GraphQL Integration with Apollo
+
+### Setup
+```bash
+npm install @apollo/client graphql
+```
+
+### Client Configuration
+```jsx
+// apollo/client.js
+import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
+import { setContext } from '@apollo/client/link/context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const httpLink = createHttpLink({
+  uri: 'https://api.example.com/graphql',
+});
+
+const authLink = setContext(async (_, { headers }) => {
+  const token = await AsyncStorage.getItem('token');
+  return {
+    headers: {
+      ...headers,
+      authorization: token ? `Bearer ${token}` : '',
+    },
+  };
+});
+
+const client = new ApolloClient({
+  link: authLink.concat(httpLink),
+  cache: new InMemoryCache(),
+});
+
+export default client;
+```
+
+### Queries and Mutations
+```jsx
+// graphql/queries.js
+import { gql } from '@apollo/client';
+
+export const GET_USER = gql`
+  query GetUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+      email
+      posts {
+        id
+        title
+      }
+    }
+  }
+`;
+
+export const CREATE_POST = gql`
+  mutation CreatePost($input: PostInput!) {
+    createPost(input: $input) {
+      id
+      title
+      content
+      createdAt
+    }
+  }
+`;
+```
+
+### Using Apollo in Components
+```jsx
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_USER, CREATE_POST } from './graphql/queries';
+
+function UserProfile({ userId }) {
+  const { loading, error, data } = useQuery(GET_USER, {
+    variables: { id: userId },
+  });
+
+  const [createPost] = useMutation(CREATE_POST, {
+    refetchQueries: [{ query: GET_USER, variables: { id: userId } }],
+  });
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage error={error} />;
+
+  return (
+    <View>
+      <Text>{data.user.name}</Text>
+      {/* Component content */}
+    </View>
+  );
+}
+```
+
+## WebSocket Integration
+
+### Setup with Socket.io
+```bash
+npm install socket.io-client
+```
+
+### Socket Configuration
+```jsx
+// socket/index.js
+import io from 'socket.io-client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+class SocketService {
+  socket = null;
+
+  connect = async () => {
+    const token = await AsyncStorage.getItem('token');
+    
+    this.socket = io('https://api.example.com', {
+      auth: {
+        token,
+      },
+      transports: ['websocket'],
+    });
+
+    this.socket.on('connect', () => {
+      console.log('Connected to socket server');
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('Disconnected from socket server');
+    });
+
+    this.socket.on('error', (error) => {
+      console.error('Socket error:', error);
+    });
+  };
+
+  disconnect = () => {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  };
+
+  emit = (event, data) => {
+    if (this.socket) {
+      this.socket.emit(event, data);
+    }
+  };
+
+  on = (event, callback) => {
+    if (this.socket) {
+      this.socket.on(event, callback);
+    }
+  };
+
+  off = (event) => {
+    if (this.socket) {
+      this.socket.off(event);
+    }
+  };
+}
+
+export default new SocketService();
+```
+
+### Using WebSocket in Components
+```jsx
+import SocketService from './socket';
+
+function ChatRoom() {
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    SocketService.connect();
+
+    SocketService.on('message', (message) => {
+      setMessages((prev) => [...prev, message]);
+    });
+
+    return () => {
+      SocketService.disconnect();
+    };
+  }, []);
+
+  const sendMessage = (text) => {
+    SocketService.emit('message', { text });
+  };
+
+  return (
+    <View>
+      {/* Chat UI */}
+    </View>
+  );
+}
+```
+
+## Error Handling and Retry Logic
+
+### API Error Handler
+```jsx
+// utils/apiErrorHandler.js
+export class APIError extends Error {
+  constructor(message, status, code) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export const handleAPIError = (error) => {
+  if (error.response) {
+    // Server responded with error
+    throw new APIError(
+      error.response.data.message,
+      error.response.status,
+      error.response.data.code
+    );
+  } else if (error.request) {
+    // Request made but no response
+    throw new APIError('Network Error', 0, 'NETWORK_ERROR');
+  } else {
+    // Error in request configuration
+    throw new APIError(error.message, 0, 'REQUEST_ERROR');
+  }
+};
+```
+
+### Retry Logic
+```jsx
+const fetchWithRetry = async (fn, retries = 3, delay = 1000) => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries === 0) throw error;
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return fetchWithRetry(fn, retries - 1, delay * 2);
+  }
+};
+
+// Usage
+const fetchData = async () => {
+  try {
+    const data = await fetchWithRetry(
+      () => api.get('/endpoint'),
+      3,
+      1000
+    );
+    return data;
+  } catch (error) {
+    handleAPIError(error);
+  }
+};
+```
+
+## Best Practices
+
+### 1. API Response Caching
+```jsx
+import { QueryClient, QueryClientProvider } from 'react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 30 * 60 * 1000, // 30 minutes
+    },
+  },
+});
+```
+
+### 2. Request Cancellation
+```jsx
+import { CancelToken } from 'axios';
+
+const fetchData = async () => {
+  const source = CancelToken.source();
+  
+  try {
+    const response = await api.get('/data', {
+      cancelToken: source.token,
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log('Request cancelled:', error.message);
+    } else {
+      throw error;
+    }
+  }
+  
+  return () => source.cancel('Operation cancelled by user');
+};
+```
+
+### 3. API Rate Limiting
+```jsx
+class RateLimiter {
+  constructor(limit, interval) {
+    this.limit = limit;
+    this.interval = interval;
+    this.requests = [];
+  }
+
+  async throttle(fn) {
+    const now = Date.now();
+    this.requests = this.requests.filter(time => now - time < this.interval);
+    
+    if (this.requests.length >= this.limit) {
+      const oldestRequest = this.requests[0];
+      const waitTime = this.interval - (now - oldestRequest);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.requests.push(now);
+    return fn();
+  }
+}
+
+const rateLimiter = new RateLimiter(5, 1000); // 5 requests per second
+
+const makeRequest = () => {
+  return rateLimiter.throttle(() => api.get('/endpoint'));
+};
+```

@@ -1,0 +1,382 @@
+# State Management in React Native
+
+## Local State Management
+
+### useState Hook
+```jsx
+import React, { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <View>
+      <Text>Count: {count}</Text>
+      <Button onPress={() => setCount(count + 1)} title="Increment" />
+    </View>
+  );
+}
+```
+
+### useReducer Hook
+```jsx
+import { useReducer } from 'react';
+
+const initialState = { count: 0 };
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment':
+      return { count: state.count + 1 };
+    case 'decrement':
+      return { count: state.count - 1 };
+    default:
+      throw new Error();
+  }
+}
+
+function Counter() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  
+  return (
+    <View>
+      <Text>Count: {state.count}</Text>
+      <Button onPress={() => dispatch({ type: 'increment' })} title="+" />
+      <Button onPress={() => dispatch({ type: 'decrement' })} title="-" />
+    </View>
+  );
+}
+```
+
+## Context API
+
+### Creating Context
+```jsx
+import { createContext, useContext, useState } from 'react';
+
+const ThemeContext = createContext();
+
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState('light');
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  return useContext(ThemeContext);
+}
+```
+
+### Using Context
+```jsx
+function App() {
+  return (
+    <ThemeProvider>
+      <Navigation />
+    </ThemeProvider>
+  );
+}
+
+function ThemedButton() {
+  const { theme, setTheme } = useTheme();
+  
+  return (
+    <Button
+      title={`Current theme: ${theme}`}
+      onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+    />
+  );
+}
+```
+
+## Redux Integration
+
+### Setup
+```bash
+npm install @reduxjs/toolkit react-redux redux-persist
+```
+
+### Store Configuration
+```jsx
+// store/index.js
+import { configureStore } from '@reduxjs/toolkit';
+import { persistStore, persistReducer } from 'redux-persist';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const persistConfig = {
+  key: 'root',
+  storage: AsyncStorage,
+  whitelist: ['auth'], // Only persist auth reducer
+};
+
+const store = configureStore({
+  reducer: {
+    auth: persistReducer(persistConfig, authReducer),
+    todos: todosReducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
+});
+
+const persistor = persistStore(store);
+
+export { store, persistor };
+```
+
+### Slice Creation
+```jsx
+// store/slices/authSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState: {
+    user: null,
+    token: null,
+    isLoading: false,
+  },
+  reducers: {
+    setCredentials: (state, action) => {
+      const { user, token } = action.payload;
+      state.user = user;
+      state.token = token;
+    },
+    logout: (state) => {
+      state.user = null;
+      state.token = null;
+    },
+  },
+});
+
+export const { setCredentials, logout } = authSlice.actions;
+export default authSlice.reducer;
+```
+
+### Redux with Async Actions
+```jsx
+// store/slices/todosSlice.js
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+
+export const fetchTodos = createAsyncThunk(
+  'todos/fetchTodos',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch('https://api.example.com/todos');
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: {
+    items: [],
+    status: 'idle',
+    error: null,
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchTodos.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchTodos.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.items = action.payload;
+      })
+      .addCase(fetchTodos.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      });
+  },
+});
+
+export default todosSlice.reducer;
+```
+
+### Using Redux in Components
+```jsx
+import { useSelector, useDispatch } from 'react-redux';
+import { setCredentials, logout } from './store/slices/authSlice';
+
+function LoginScreen() {
+  const dispatch = useDispatch();
+  const { user, isLoading } = useSelector((state) => state.auth);
+
+  const handleLogin = async (credentials) => {
+    try {
+      const response = await loginAPI(credentials);
+      dispatch(setCredentials(response.data));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <View>
+      {/* Login form */}
+    </View>
+  );
+}
+```
+
+## MobX Integration
+
+### Setup
+```bash
+npm install mobx mobx-react-lite
+```
+
+### Store Definition
+```jsx
+// stores/TodoStore.js
+import { makeAutoObservable } from 'mobx';
+
+class TodoStore {
+  todos = [];
+  isLoading = false;
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  addTodo(todo) {
+    this.todos.push(todo);
+  }
+
+  removeTodo(id) {
+    this.todos = this.todos.filter(todo => todo.id !== id);
+  }
+
+  async fetchTodos() {
+    this.isLoading = true;
+    try {
+      const response = await fetch('https://api.example.com/todos');
+      const data = await response.json();
+      this.todos = data;
+    } catch (error) {
+      console.error(error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+}
+
+export const todoStore = new TodoStore();
+```
+
+### Using MobX in Components
+```jsx
+import { observer } from 'mobx-react-lite';
+import { todoStore } from './stores/TodoStore';
+
+const TodoList = observer(() => {
+  useEffect(() => {
+    todoStore.fetchTodos();
+  }, []);
+
+  return (
+    <View>
+      {todoStore.isLoading ? (
+        <ActivityIndicator />
+      ) : (
+        <FlatList
+          data={todoStore.todos}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => todoStore.removeTodo(item.id)}>
+              <Text>{item.title}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+    </View>
+  );
+});
+```
+
+## Best Practices
+
+### 1. State Organization
+- Keep related state together
+- Use appropriate state management solution based on app size
+- Consider using multiple contexts instead of one global context
+
+### 2. Performance Optimization
+```jsx
+// Memoization
+import { useMemo, useCallback } from 'react';
+
+function ExpensiveComponent({ data, onUpdate }) {
+  const processedData = useMemo(() => {
+    return expensiveOperation(data);
+  }, [data]);
+
+  const handleUpdate = useCallback(() => {
+    onUpdate(processedData);
+  }, [onUpdate, processedData]);
+
+  return (
+    <View>
+      {/* Component content */}
+    </View>
+  );
+}
+```
+
+### 3. Error Handling
+```jsx
+// Custom error boundary
+class ErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Log error to service
+    logErrorToService(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorScreen onReset={() => this.setState({ hasError: false })} />;
+    }
+    return this.props.children;
+  }
+}
+```
+
+### 4. State Persistence
+```jsx
+// Using AsyncStorage for local persistence
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const persistData = async (key, value) => {
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error('Error saving data', error);
+  }
+};
+
+const loadData = async (key) => {
+  try {
+    const value = await AsyncStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    console.error('Error loading data', error);
+    return null;
+  }
+};
+```

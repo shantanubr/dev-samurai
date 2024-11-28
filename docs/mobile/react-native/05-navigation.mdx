@@ -1,0 +1,309 @@
+# Navigation in React Native
+
+## React Navigation
+
+### Installation
+```bash
+npm install @react-navigation/native
+npm install react-native-screens react-native-safe-area-context
+npm install @react-navigation/native-stack
+```
+
+### Basic Setup
+```jsx
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const Stack = createNativeStackNavigator();
+
+function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen 
+          name="Home" 
+          component={HomeScreen}
+          options={{ title: 'Welcome' }}
+        />
+        <Stack.Screen name="Details" component={DetailsScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+```
+
+### Navigation Types
+
+#### Stack Navigation
+```jsx
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const Stack = createNativeStackNavigator();
+
+function StackNavigator() {
+  return (
+    <Stack.Navigator
+      initialRouteName="Home"
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#f4511e',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Details" component={DetailsScreen} />
+    </Stack.Navigator>
+  );
+}
+```
+
+#### Tab Navigation
+```jsx
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+const Tab = createBottomTabNavigator();
+
+function TabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Settings') {
+            iconName = focused ? 'settings' : 'settings-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
+    </Tab.Navigator>
+  );
+}
+```
+
+#### Drawer Navigation
+```jsx
+import { createDrawerNavigator } from '@react-navigation/drawer';
+
+const Drawer = createDrawerNavigator();
+
+function DrawerNavigator() {
+  return (
+    <Drawer.Navigator>
+      <Drawer.Screen name="Home" component={HomeScreen} />
+      <Drawer.Screen name="Settings" component={SettingsScreen} />
+    </Drawer.Navigator>
+  );
+}
+```
+
+### Navigation Actions
+
+#### Basic Navigation
+```jsx
+function HomeScreen({ navigation }) {
+  return (
+    <Button
+      title="Go to Details"
+      onPress={() => navigation.navigate('Details')}
+    />
+  );
+}
+```
+
+#### Passing Parameters
+```jsx
+// Navigating with params
+navigation.navigate('Details', {
+  itemId: 86,
+  otherParam: 'anything',
+});
+
+// Accessing params in screen
+function DetailsScreen({ route, navigation }) {
+  const { itemId, otherParam } = route.params;
+  return (
+    <View>
+      <Text>itemId: {itemId}</Text>
+      <Text>otherParam: {otherParam}</Text>
+    </View>
+  );
+}
+```
+
+#### Stack Actions
+```jsx
+// Push multiple screens
+navigation.push('Details');
+
+// Go back
+navigation.goBack();
+
+// Go to first screen
+navigation.popToTop();
+
+// Replace current screen
+navigation.replace('Details');
+```
+
+### Deep Linking
+
+#### Configuration
+```jsx
+const linking = {
+  prefixes: ['myapp://', 'https://myapp.com'],
+  config: {
+    screens: {
+      Home: 'home',
+      Details: {
+        path: 'details/:id',
+        parse: {
+          id: (id) => `${id}`,
+        },
+      },
+    },
+  },
+};
+
+function App() {
+  return (
+    <NavigationContainer linking={linking}>
+      {/* ... */}
+    </NavigationContainer>
+  );
+}
+```
+
+### Authentication Flow
+```jsx
+const Stack = createNativeStackNavigator();
+
+function App() {
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        {isSignedIn ? (
+          // Screens for signed in users
+          <>
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+          </>
+        ) : (
+          // Auth screens
+          <>
+            <Stack.Screen name="SignIn" component={SignInScreen} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Type Checking
+```typescript
+type RootStackParamList = {
+  Home: undefined;
+  Details: { itemId: number };
+  Profile: { userId: string };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+```
+
+### 2. Screen Organization
+```jsx
+// screens/index.js
+export { default as HomeScreen } from './HomeScreen';
+export { default as DetailsScreen } from './DetailsScreen';
+export { default as ProfileScreen } from './ProfileScreen';
+
+// navigation/AppNavigator.js
+import * as Screens from '../screens';
+
+function AppNavigator() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="Home" component={Screens.HomeScreen} />
+      <Stack.Screen name="Details" component={Screens.DetailsScreen} />
+      <Stack.Screen name="Profile" component={Screens.ProfileScreen} />
+    </Stack.Navigator>
+  );
+}
+```
+
+### 3. Navigation Service
+```jsx
+// navigation/NavigationService.js
+import { createNavigationContainerRef } from '@react-navigation/native';
+
+export const navigationRef = createNavigationContainerRef();
+
+export function navigate(name, params) {
+  if (navigationRef.isReady()) {
+    navigationRef.navigate(name, params);
+  }
+}
+
+// Usage in App.js
+<NavigationContainer ref={navigationRef}>
+  {/* ... */}
+</NavigationContainer>
+
+// Usage anywhere in the app
+import * as NavigationService from './navigation/NavigationService';
+NavigationService.navigate('Details', { itemId: 123 });
+```
+
+### 4. Screen Options
+```jsx
+<Stack.Navigator
+  screenOptions={{
+    headerShown: false,
+    presentation: 'modal',
+    animation: 'slide_from_right',
+    headerBackTitleVisible: false,
+    gestureEnabled: true,
+  }}
+>
+  {/* ... */}
+</Stack.Navigator>
+```
+
+### 5. Custom Navigation Components
+```jsx
+function CustomHeader({ navigation, route, options }) {
+  return (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => navigation.goBack()}>
+        <Icon name="arrow-back" size={24} />
+      </TouchableOpacity>
+      <Text style={styles.title}>{options.title}</Text>
+    </View>
+  );
+}
+
+<Stack.Navigator
+  screenOptions={{
+    header: (props) => <CustomHeader {...props} />,
+  }}
+>
+  {/* ... */}
+</Stack.Navigator>
+```

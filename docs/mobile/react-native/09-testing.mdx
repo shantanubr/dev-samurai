@@ -1,0 +1,379 @@
+# Testing in React Native
+
+## Unit Testing
+
+### Setup
+```bash
+npm install --save-dev @testing-library/react-native jest
+```
+
+### Jest Configuration
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'react-native',
+  setupFiles: ['./jest.setup.js'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-native|@react-native|@react-navigation)/)',
+  ],
+  moduleNameMapper: {
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
+      '<rootDir>/__mocks__/fileMock.js',
+  },
+};
+
+// jest.setup.js
+import 'react-native-gesture-handler/jestSetup';
+
+jest.mock('react-native-reanimated', () => {
+  const Reanimated = require('react-native-reanimated/mock');
+  Reanimated.default.call = () => {};
+  return Reanimated;
+});
+
+jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+```
+
+### Component Testing
+```jsx
+import { render, fireEvent } from '@testing-library/react-native';
+import Counter from './Counter';
+
+describe('Counter Component', () => {
+  it('renders initial count', () => {
+    const { getByText } = render(<Counter initialCount={0} />);
+    expect(getByText('Count: 0')).toBeTruthy();
+  });
+
+  it('increments count when button is pressed', () => {
+    const { getByText } = render(<Counter initialCount={0} />);
+    const button = getByText('Increment');
+    
+    fireEvent.press(button);
+    
+    expect(getByText('Count: 1')).toBeTruthy();
+  });
+});
+```
+
+### Hook Testing
+```jsx
+import { renderHook, act } from '@testing-library/react-hooks';
+import useCounter from './useCounter';
+
+describe('useCounter', () => {
+  it('should increment counter', () => {
+    const { result } = renderHook(() => useCounter());
+
+    act(() => {
+      result.current.increment();
+    });
+
+    expect(result.current.count).toBe(1);
+  });
+});
+```
+
+### Redux Testing
+```jsx
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import { fetchUser } from './userActions';
+
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
+
+describe('User Actions', () => {
+  it('creates FETCH_USER_SUCCESS when fetching user has been done', async () => {
+    const expectedActions = [
+      { type: 'FETCH_USER_REQUEST' },
+      { type: 'FETCH_USER_SUCCESS', payload: { id: 1, name: 'John' } }
+    ];
+
+    const store = mockStore({ user: {} });
+    await store.dispatch(fetchUser(1));
+    
+    expect(store.getActions()).toEqual(expectedActions);
+  });
+});
+```
+
+## Integration Testing
+
+### Navigation Testing
+```jsx
+import { NavigationContainer } from '@react-navigation/native';
+import { render, fireEvent } from '@testing-library/react-native';
+
+const renderWithNavigation = (component) => {
+  return render(
+    <NavigationContainer>
+      {component}
+    </NavigationContainer>
+  );
+};
+
+describe('Navigation', () => {
+  it('navigates to details screen', async () => {
+    const { getByText, findByText } = renderWithNavigation(<App />);
+    
+    fireEvent.press(getByText('Go to Details'));
+    
+    expect(await findByText('Details Screen')).toBeTruthy();
+  });
+});
+```
+
+### API Integration Testing
+```jsx
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { fetchUserData } from './api';
+
+describe('API Integration', () => {
+  let mock;
+
+  beforeEach(() => {
+    mock = new MockAdapter(axios);
+  });
+
+  afterEach(() => {
+    mock.reset();
+  });
+
+  it('fetches user data successfully', async () => {
+    const mockData = { id: 1, name: 'John' };
+    mock.onGet('/user/1').reply(200, mockData);
+
+    const result = await fetchUserData(1);
+    expect(result).toEqual(mockData);
+  });
+
+  it('handles API errors', async () => {
+    mock.onGet('/user/1').reply(500);
+
+    await expect(fetchUserData(1)).rejects.toThrow();
+  });
+});
+```
+
+## End-to-End Testing
+
+### Detox Setup
+```bash
+npm install detox --save-dev
+detox init
+```
+
+### Detox Configuration
+```javascript
+// .detoxrc.js
+module.exports = {
+  testRunner: 'jest',
+  runnerConfig: 'e2e/config.json',
+  specs: 'e2e',
+  behavior: {
+    init: {
+      exposeGlobals: false,
+    },
+  },
+  apps: {
+    'ios.debug': {
+      type: 'ios.app',
+      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/YourApp.app',
+      build: 'xcodebuild -workspace ios/YourApp.xcworkspace -scheme YourApp -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build'
+    },
+    'android.debug': {
+      type: 'android.apk',
+      binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
+      build: 'cd android && ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug',
+      reversePorts: [8081]
+    }
+  },
+  devices: {
+    simulator: {
+      type: 'ios.simulator',
+      device: {
+        type: 'iPhone 12'
+      }
+    },
+    emulator: {
+      type: 'android.emulator',
+      device: {
+        avdName: 'Pixel_3a_API_30_x86'
+      }
+    }
+  }
+};
+```
+
+### Writing E2E Tests
+```javascript
+// e2e/firstTest.e2e.js
+describe('Example', () => {
+  beforeAll(async () => {
+    await device.launchApp();
+  });
+
+  beforeEach(async () => {
+    await device.reloadReactNative();
+  });
+
+  it('should show welcome screen', async () => {
+    await expect(element(by.text('Welcome'))).toBeVisible();
+  });
+
+  it('should show hello screen after tap', async () => {
+    await element(by.text('Hello')).tap();
+    await expect(element(by.text('World'))).toBeVisible();
+  });
+});
+```
+
+## Snapshot Testing
+
+### Component Snapshots
+```jsx
+import renderer from 'react-test-renderer';
+import MyComponent from './MyComponent';
+
+describe('MyComponent', () => {
+  it('renders correctly', () => {
+    const tree = renderer.create(<MyComponent />).toJSON();
+    expect(tree).toMatchSnapshot();
+  });
+
+  it('renders correctly with props', () => {
+    const tree = renderer
+      .create(<MyComponent title="Test" />)
+      .toJSON();
+    expect(tree).toMatchSnapshot();
+  });
+});
+```
+
+### Updating Snapshots
+```bash
+jest --updateSnapshot
+```
+
+## Mocking
+
+### Mock Components
+```jsx
+jest.mock('react-native-maps', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: View,
+    MapView: View,
+    Marker: View,
+  };
+});
+```
+
+### Mock Functions
+```jsx
+describe('Component with API calls', () => {
+  const mockFetch = jest.fn();
+  global.fetch = mockFetch;
+
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
+  it('calls API on mount', async () => {
+    mockFetch.mockImplementationOnce(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({ data: 'test' }),
+      })
+    );
+
+    render(<MyComponent />);
+    
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+## Test Coverage
+
+### Configuration
+```javascript
+// jest.config.js
+module.exports = {
+  // ... other config
+  collectCoverage: true,
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx}',
+    '!src/**/*.style.{js,jsx}',
+    '!src/assets/**',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+};
+```
+
+### Running Coverage
+```bash
+jest --coverage
+```
+
+## Best Practices
+
+### 1. Test Organization
+```jsx
+// Component.test.js
+describe('Component', () => {
+  describe('rendering', () => {
+    it('renders default state correctly', () => {
+      // Test default rendering
+    });
+
+    it('renders with props correctly', () => {
+      // Test prop rendering
+    });
+  });
+
+  describe('interactions', () => {
+    it('handles button press correctly', () => {
+      // Test user interactions
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles error states correctly', () => {
+      // Test error scenarios
+    });
+  });
+});
+```
+
+### 2. Custom Render Function
+```jsx
+// test-utils.js
+import { render } from '@testing-library/react-native';
+import { ThemeProvider } from './theme';
+import { Provider } from 'react-redux';
+import store from './store';
+
+const AllTheProviders = ({ children }) => {
+  return (
+    <Provider store={store}>
+      <ThemeProvider>{children}</ThemeProvider>
+    </Provider>
+  );
+};
+
+const customRender = (ui, options) =>
+  render(ui, { wrapper: AllTheProviders, ...options });
+
+export * from '@testing-library/react-native';
+export { customRender as render };
+```
